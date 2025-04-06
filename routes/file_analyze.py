@@ -5,20 +5,18 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 import os
 
-# 设置OpenAI配置
-client = OpenAI(
-    api_key=os.getenv('OPENAI_API_KEY'),
-    base_url=os.getenv('OPENAI_BASE_URL')
-)
-
-def get_ai_paraphrase(text, prompt, model=None):
+def get_ai_paraphrase(text, prompt, api_key=None, base_url=None, model=None):
     try:
-        # Use provided model or fallback to environment variable
+        # Use provided parameters or fallback to environment variables
+        api_key = api_key or os.getenv('OPENAI_API_KEY')
+        base_url = base_url or os.getenv('OPENAI_BASE_URL')
         model = model or os.getenv('OPENAI_MODEL', 'deepseek-chat')
-        # Log request parameters
-        print(f"[DEBUG] API Request params: model={model}, text={text[:100]}...")
-        print(f"[DEBUG] API Base URL: {os.getenv('OPENAI_BASE_URL')}")
-        
+        # Initialize OpenAI client with provided or environment variables
+        client = OpenAI(
+            api_key=api_key,
+            base_url=base_url
+        )
+
         response = client.chat.completions.create(
             model=model,
             messages=[
@@ -29,7 +27,7 @@ def get_ai_paraphrase(text, prompt, model=None):
         )
         return response.choices[0].message.content
     except Exception as e:
-        error_msg = f"AI Processing Failed:\nError Type: {type(e).__name__}\nError Message: {str(e)}\nEnvironment Config:\n- API Key: {'Set' if os.getenv('OPENAI_API_KEY') else 'Not Set'}\n- Base URL: {os.getenv('OPENAI_BASE_URL')}\n- Model: {os.getenv('OPENAI_MODEL', 'deepseek-chat')}"
+        error_msg = f"AI Processing Failed:\nError Type: {type(e).__name__}\nError Message: {str(e)}"
         print(f"[ERROR] {error_msg}")
         raise Exception(error_msg)
 
@@ -38,16 +36,18 @@ def ai_paraphrase():
     data = request.get_json()
     if not data:
         return make_response(code=400, message="No request data provided")
-    
+
     text = data.get('text')
     prompt = data.get('prompt')
+    api_key = data.get('api_key')
+    base_url = data.get('base_url')
     model = data.get('model')
-    
+
     if not text:
         return make_response(code=400, message="No original text provided")
-    
+
     try:
-        result = get_ai_paraphrase(text, prompt, model)
+        result = get_ai_paraphrase(text, prompt, api_key, base_url, model)
         return make_response(data={"original_text": text, "paraphrased_text": result})
     except Exception as e:
         return make_response(code=500, message=str(e))
