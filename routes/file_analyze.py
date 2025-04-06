@@ -28,7 +28,6 @@ def get_ai_paraphrase(text, prompt, api_key=None, base_url=None, model=None):
         return response.choices[0].message.content
     except Exception as e:
         error_msg = f"AI Processing Failed:\nError Type: {type(e).__name__}\nError Message: {str(e)}"
-        print(f"[ERROR] {error_msg}")
         raise Exception(error_msg)
 
 @main.route('/ai_paraphrase', methods=['POST'])
